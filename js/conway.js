@@ -2,6 +2,10 @@
 {
     "use strict";
 
+    var UPDATES_PER_SECOND = 10;
+    var UPDATE_PERIOD = 1000 / UPDATES_PER_SECOND;
+    var updateTimer = 0;
+
     var canvas;
     var ctx;
     var updateTimeout;
@@ -13,6 +17,8 @@
     var cellstemp = [];
 
     var paused = true;
+    var dt;
+    var lastTime;
 
     window.onload = init;
     window.onmouseup = mouseup;
@@ -21,6 +27,7 @@
     {
         canvas = document.querySelector("canvas");
         ctx = canvas.getContext("2d");
+        lastTime = Date.now();
 
         createUI();
 
@@ -62,7 +69,19 @@
         var speed = document.querySelector("#speed");
         speed.onchange = function()
         {
+            UPDATES_PER_SECOND = 20 * speed.target / 100;
+        };
 
+        var clear = document.querySelector("#clear");
+        clear.onclick = function()
+        {
+            for (var r = 0; r < NUMROWS; r++)
+            {
+                for (var c = 0; c < NUMCOLS; c++)
+                {
+                    cells[r][c] = 0;
+                }
+            }
         };
     }
 
@@ -112,16 +131,26 @@
             }
         }
 
-        if (r == 0 && c == 0)
-            console.log(neighbors);
+        //if (r == 0 && c == 0)
+            //console.log(neighbors);
 
         return neighbors;
     }
 
     function render()
     {
+        dt = Date.now() - lastTime;
+        lastTime = Date.now();
+        updateTimer += dt;
+
         if (!paused)
-            updateTimeout = setTimeout(update, 1000);
+        {
+            if (updateTimer >= UPDATE_PERIOD)
+            {
+                updateTimeout = setTimeout(update, 1000);
+                updateTimer = 0;
+            }
+        }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
