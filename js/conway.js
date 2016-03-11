@@ -19,6 +19,7 @@
     var cellstemp = [];
     var numAlive = 3;
 
+    var sound = true;
     var note;
     var octave;
 
@@ -78,6 +79,12 @@
         {
             UPDATES_PER_SECOND = 10 * parseInt(speed.value) / 100 + 2.5;
             UPDATE_PERIOD = 1000 / UPDATES_PER_SECOND;
+        };
+
+        var soundInput = document.querySelector("#sound");
+        soundInput.onchange = function()
+        {
+            sound = soundInput.checked;
         };
 
         var randomize = document.querySelector("#random");
@@ -207,7 +214,8 @@
 
             octave = Math.round((TOTALCELLS - numAlive) / TOTALCELLS * 8);
 
-            playNote(teoria.note(note + octave).fq(), 0.05);
+            if (sound)
+                playNote(teoria.note(note + octave).fq(), 0.05);
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
