@@ -2,19 +2,25 @@
 {
     "use strict";
 
-    var UPDATES_PER_SECOND = 10;
+    var UPDATES_PER_SECOND = 5;
     var UPDATE_PERIOD = 1000 / UPDATES_PER_SECOND;
     var updateTimer = 0;
 
     var canvas;
     var ctx;
+    var actx;
     var updateTimeout;
 
     var NUMROWS = 80;
     var NUMCOLS = 100;
+    var TOTALCELLS = NUMROWS * NUMCOLS;
     var CELLSIZE = 10;
     var cells = [];
     var cellstemp = [];
+    var numAlive = 3;
+
+    var note;
+    var octave;
 
     var paused = true;
     var dt;
@@ -27,6 +33,7 @@
     {
         canvas = document.querySelector("canvas");
         ctx = canvas.getContext("2d");
+        actx = new AudioContext();
         lastTime = Date.now();
 
         createUI();
@@ -67,9 +74,23 @@
         };
 
         var speed = document.querySelector("#speed");
-        speed.onchange = function()
+        speed.oninput = function()
         {
-            UPDATES_PER_SECOND = 20 * speed.target / 100;
+            UPDATES_PER_SECOND = 10 * parseInt(speed.value) / 100 + 2.5;
+            UPDATE_PERIOD = 1000 / UPDATES_PER_SECOND;
+        };
+
+        var randomize = document.querySelector("#random");
+        randomize.onclick = function()
+        {
+            for (var r = 0; r < NUMROWS; r++)
+                for (var c = 0; c < NUMCOLS; c++)
+                {
+                    if (Math.random() < 0.35)
+                        cells[r][c] = 1;
+                    else
+                        cells[r][c] = 0;
+                }
         };
 
         var clear = document.querySelector("#clear");
@@ -85,8 +106,20 @@
         };
     }
 
+    function playNote(freq, dur)
+    {
+        var osc = actx.createOscillator();
+        osc.type = "square";
+        osc.frequency.value = freq;
+        osc.connect(actx.destination);
+        osc.start();
+        osc.stop(actx.currentTime + dur);
+    }
+
     function update()
     {
+        numAlive = 0;
+
         for (var r = 0; r < NUMROWS; r++)
         {
             for (var c = 0; c < NUMCOLS; c++)
@@ -95,13 +128,19 @@
                 var alive = cells[r][c] == 1;
 
                 if (!alive && neighbors == 3)
+                {
                     cellstemp[r][c] = 1;
+                    numAlive++;
+                }
                 else if (alive && neighbors > 3)
                     cellstemp[r][c] = 0;
                 else if (alive && neighbors < 2)
                     cellstemp[r][c] = 0;
                 else if (alive)
+                {
                     cellstemp[r][c] = 1;
+                    numAlive++;
+                }
                 else
                     cellstemp[r][c] = 0;
             }
@@ -131,9 +170,6 @@
             }
         }
 
-        //if (r == 0 && c == 0)
-            //console.log(neighbors);
-
         return neighbors;
     }
 
@@ -147,9 +183,31 @@
         {
             if (updateTimer >= UPDATE_PERIOD)
             {
-                updateTimeout = setTimeout(update, 1000);
+                updateTimeout = setTimeout(update, 0);
                 updateTimer = 0;
             }
+
+            switch (numAlive % 7)
+            {
+                case 0: note = "a";
+                    break;
+                case 1: note = "b";
+                    break;
+                case 2: note = "c";
+                    break;
+                case 3: note = "d";
+                    break;
+                case 4: note = "e";
+                    break;
+                case 5: note = "f";
+                    break;
+                case 6: note = "g";
+                    break;
+            }
+
+            octave = Math.round((TOTALCELLS - numAlive) / TOTALCELLS * 8);
+
+            playNote(teoria.note(note + octave).fq(), 0.05);
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
